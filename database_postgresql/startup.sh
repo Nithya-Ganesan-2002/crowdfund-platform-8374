@@ -154,3 +154,16 @@ echo "To use with Node.js viewer, run: source db_visualizer/postgres.env"
 echo "To connect to the database, use one of the following commands:"
 echo "psql -h localhost -U ${DB_USER} -d ${DB_NAME} -p ${DB_PORT}"
 echo "$(cat db_connection.txt)"
+
+# Optional: auto-apply migrations if present
+MIGRATIONS_DIR="$(pwd)/migrations"
+if [ -d "${MIGRATIONS_DIR}" ]; then
+  echo "Applying database migrations from ${MIGRATIONS_DIR}..."
+  for file in $(ls -1 ${MIGRATIONS_DIR}/*.sql 2>/dev/null | sort); do
+    echo " - Running $(basename "$file")"
+    sudo -u postgres ${PG_BIN}/psql -p ${DB_PORT} -d ${DB_NAME} -f "$file" >/dev/null 2>&1 || {
+      echo "   Warning: Migration $(basename "$file") encountered errors or already applied."
+    }
+  done
+  echo "Migrations application complete."
+fi
